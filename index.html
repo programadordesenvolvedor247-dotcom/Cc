@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel Global Firebase – Tempo Real</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{font-family:Arial;background:#f2f2f2;margin:0;padding:20px}
+.box{background:#fff;max-width:400px;margin:auto;padding:20px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,.1)}
+input,button{width:100%;padding:10px;margin:5px 0}
+button{background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer}
+.hidden{display:none}
+ul{padding:0}
+li{list-style:none;padding:5px;border-bottom:1px solid #ddd}
+.admin{background:#000;color:#0f0;padding:10px;margin-top:10px}
+</style>
+</head>
+<body>
+
+<div class="box" id="loginBox">
+  <h2>Login</h2>
+  <input id="loginUser" placeholder="Usuário">
+  <input id="loginPass" type="password" placeholder="Senha">
+  <button onclick="login()">Entrar</button>
+  <p onclick="showCadastro()" style="cursor:pointer;color:blue">Criar conta</p>
+</div>
+
+<div class="box hidden" id="cadastroBox">
+  <h2>Cadastrar</h2>
+  <input id="cadUser" placeholder="Usuário">
+  <input id="cadPass" type="password" placeholder="Senha">
+  <button onclick="cadastrar()">Cadastrar</button>
+  <p onclick="showLogin()" style="cursor:pointer;color:blue">Voltar</p>
+</div>
+
+<div class="box hidden" id="userBox">
+  <h2>Usuários em tempo real 🌍</h2>
+  <ul id="listaUsuarios"></ul>
+  <button onclick="logout()">Sair</button>
+</div>
+
+<div class="admin hidden" id="adminBox">
+  <h3>Painel Admin</h3>
+  Total de usuários: <span id="total">0</span>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBRU1COppsLe_QJmmRmFRASW-w_5pdUMSw",
+    authDomain: "teste-f56fb.firebaseapp.com",
+    projectId: "teste-f56fb",
+    storageBucket: "teste-f56fb.firebasestorage.app",
+    messagingSenderId: "375380622646",
+    appId: "1:375380622646:web:1928e5dd0dacee870c8797"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const usersRef = collection(db, "usuarios");
+  const ADMIN_USER = "admin";
+
+  window.showCadastro = () => {
+    loginBox.classList.add("hidden");
+    cadastroBox.classList.remove("hidden");
+  };
+
+  window.showLogin = () => {
+    cadastroBox.classList.add("hidden");
+    loginBox.classList.remove("hidden");
+  };
+
+  window.cadastrar = async () => {
+    if (!cadUser.value || !cadPass.value) return alert("Preencha tudo");
+    await addDoc(usersRef, { user: cadUser.value, pass: cadPass.value });
+    alert("Conta criada");
+    showLogin();
+  };
+
+  window.login = async () => {
+    const q = query(usersRef, where("user", "==", loginUser.value), where("pass", "==", loginPass.value));
+    const snap = await getDocs(q);
+    if (snap.empty) return alert("Login inválido");
+
+    loginBox.classList.add("hidden");
+    userBox.classList.remove("hidden");
+
+    if (loginUser.value === ADMIN_USER) adminBox.classList.remove("hidden");
+    ouvirUsuarios();
+  };
+
+  function ouvirUsuarios() {
+    onSnapshot(usersRef, (snap) => {
+      listaUsuarios.innerHTML = "";
+      total.textContent = snap.size;
+      snap.forEach(d => {
+        const li = document.createElement("li");
+        li.textContent = d.data().user;
+        listaUsuarios.appendChild(li);
+      });
+    });
+  }
+
+  window.logout = () => location.reload();
+</script>
+
+</body>
+</html>
